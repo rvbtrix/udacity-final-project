@@ -88,5 +88,3 @@ typings/
 .serverless/
 
 build/
-
-*/config.ts
