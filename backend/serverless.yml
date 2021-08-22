@@ -1,0 +1,274 @@
+service: udacity-final-project
+
+frameworkVersion: ">=2.33.1"
+
+package:
+  exclude:
+    - ./**
+    - '!node_modules/**'
+  include:
+    - '!node_modules/aws-sdk/**'
+    - '!node_modules/**/aws-sdk/**'
+    - build/src/**
+    - package.json
+    - package-lock.json
+  excludeDevDependencies: true
+
+provider:
+  name: aws
+  runtime: nodejs14.x
+
+  lambdaHashingVersion: "20201221"
+
+  apiGateway:
+    shouldStartNameWithService: true
+
+  iam:
+    role:
+      statements:
+        # Permite chamada entre lambdas do mesmo projeto (necessário pelo plugin warnup)
+        - Effect: 'Allow'
+          Action:
+              - 'lambda:InvokeFunction'
+          Resource:
+          - Fn::Join:
+              - ':'
+              - - arn:aws:lambda
+                - Ref: AWS::Region
+                - Ref: AWS::AccountId
+                - function:${self:service}-${opt:stage, self:provider.stage}-*
+        - Effect: 'Allow'
+          Action:
+            - 'secretsmanager:GetSecretValue'
+          Resource:
+          - Fn::Join:
+              - ':'
+              - - arn:aws:secretsmanager
+                - Ref: AWS::Region
+                - Ref: AWS::AccountId
+        - Effect: Allow
+          Action:
+            - codedeploy:*
+          Resource:
+            - '*'
+        - Effect: Allow
+          Action:
+            - dynamodb:Query
+            - dynamodb:Scan
+            - dynamodb:GetItem
+            - dynamodb:PutItem
+            - dynamodb:UpdateItem
+            - dynamodb:DeleteItem
+          Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOITEM_DB_TABLE}
+        - Effect: Allow
+          Action:
+            - dynamodb:Query
+            - dynamodb:Scan
+          Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOITEM_DB_TABLE}/index/*
+        - Effect: Allow
+          Action:
+            - s3:ListBucket
+            - s3:PutObject
+            - s3:GetObject
+          Resource: arn:aws:s3:::${self:provider.environment.IMAGES_S3_BUCKET}
+        - Effect: Allow
+          Action:
+            - s3:ListBucket
+            - s3:PutObject
+            - s3:GetObject
+          Resource: arn:aws:s3:::${self:provider.environment.IMAGES_S3_BUCKET}/*
+
+      # managedPolicies:
+      #   - ${self:custom.config.otherStack.user.busUserEventsStreamConsumerPolicy}
+
+  # vpc: ${self:custom.config.vpc}
+  stage: ${opt:stage, 'local'}
+  region: ${self:custom.config.region}
+
+  environment:
+    REGION: ${self:custom.region}
+    STAGE: ${self:custom.stage}
+    SECRET_KEYS_ID: ${self:custom.config.environment.SECRET_KEYS_ID}
+    IMAGES_S3_BUCKET: serverless-udagram-images-${self:provider.stage}
+    TODOITEM_DB_TABLE: ${self:custom.database.todoItem}
+    SIGNED_URL_EXPIRATION: 300
+
+functions:
+  Auth:
+    handler: build/src/lambda/auth/auth0Authorizer.handler
+
+  # TODO: Configure this function -
+  # Provide iamRoleStatements property for performing Actions on DynamoDB
+  GetTodos:
+    handler: build/src/lambda/http/getTodos.handler
+    events:
+      - http:
+          method: get
+          path: todos
+          cors: true
+          authorizer: Auth
+
+  # TODO: Configure this function -
+  # Provide iamRoleStatements property. Decide the Actions and AWS Resource.
+  # To refer to an AWS resource defined in the "Resources" section, you can use "Resource: !GetAtt <resource-name>.Arn"
+  # To validate incoming HTTP requests, we have provided the request schemas in function definition below.
+  CreateTodo:
+    handler: build/src/lambda/http/createTodo.handler
+    events:
+      - http:
+          method: post
+          path: todos
+          cors: true
+          authorizer: Auth
+          # request:
+          #   schemas:
+          #     application/json: ${file(models/create-todo-model.json)}
+
+  # TODO: Configure this function
+  # Provide property for setting up CORS, Authorizer, iamRoleStatements, and request schemas
+  UpdateTodo:
+    handler: build/src/lambda/http/updateTodo.handler
+    events:
+      - http:
+          method: patch
+          path: todos/{todoId}
+          cors: true
+          authorizer: Auth
+
+  # TODO: Configure this function
+  # Provide property for setting up CORS, Authorizer, iamRoleStatements
+  DeleteTodo:
+    handler: build/src/lambda/http/deleteTodo.handler
+    events:
+      - http:
+          method: delete
+          path: todos/{todoId}
+          cors: true
+          authorizer: Auth
+
+  # TODO: Configure this function
+  # Provide property for setting up CORS, Authorizer, iamRoleStatements
+  GenerateUploadUrl:
+    handler: build/src/lambda/http/generateUploadUrl.handler
+    events:
+      - http:
+          method: post
+          path: todos/{todoId}/attachment
+          cors: true
+          authorizer: Auth
+
+
+custom:
+  # Carrega as configurações do stage
+  config: ${file(stages.yml):${opt:stage, self:provider.stage}}
+  stage: ${self:provider.stage}
+  region: ${opt:region, self:provider.region}
+  database:
+    todoItem: ${self:service}-${self:custom.stage}-todoItem
+  warmup:
+    default:
+      enabled:
+  splitStacks:
+    perFunction: false
+    perType: false
+    perGroupFunction: false
+  topicName: imagesTopic-${self:provider.stage}
+ 
+  serverless-offline-dynamodb-streams:
+    endpoint: http://0.0.0.0:8000
+  prune:
+    automatic: true
+    number: 3
+  scriptHooks:
+    'before:package:createDeploymentArtifacts': npx tsc --build .
+
+plugins:
+  - serverless-scriptable-plugin
+  - serverless-plugin-warmup
+  - serverless-plugin-split-stacks
+  - serverless-dynamodb-local
+  - serverless-offline
+  - serverless-prune-plugin
+
+resources:
+  Resources:
+    TodoItem:
+      Type: AWS::DynamoDB::Table
+      Properties:
+          TableName: ${self:custom.database.todoItem}
+          AttributeDefinitions:
+              - AttributeName: todoId
+                AttributeType: S
+              - AttributeName: userId
+                AttributeType: S
+          KeySchema:
+              - AttributeName: todoId
+                KeyType: HASH
+          BillingMode: PAY_PER_REQUEST
+          GlobalSecondaryIndexes:
+              - IndexName: userIdIndex
+                KeySchema:
+                  - AttributeName: userId
+                    KeyType: HASH
+                Projection:
+                  ProjectionType: ALL
+
+    DynamoDBIamPolicy:
+        Type: AWS::IAM::Policy
+        DependsOn:
+            - TodoItem
+        Properties:
+            PolicyName: ${self:service}-${self:custom.stage}-dynamodb
+            PolicyDocument:
+                Version: "2012-10-17"
+                Statement:
+                    - Effect: Allow
+                      Action:
+                          - dynamodb:DescribeTable
+                          - dynamodb:GetItem
+                          - dynamodb:PutItem
+                          - dynamodb:UpdateItem
+                          - dynamodb:DeleteItem
+                          - dynamodb:Scan
+                          - dynamodb:Query
+                          - dynamodb:ListStreams
+                          - dynamodb:DescribeStream
+                      Resource:
+                          - arn:aws:dynamodb:*:*:table/${self:custom.database.todoItem}
+
+            Roles:
+                - Ref: IamRoleLambdaExecution
+
+    AttachmentsBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:provider.environment.IMAGES_S3_BUCKET}
+        CorsConfiguration:
+          CorsRules:
+            -
+              AllowedOrigins:
+                - '*'
+              AllowedHeaders:
+                - '*'
+              AllowedMethods:
+                - GET
+                - PUT
+                - POST
+                - DELETE
+                - HEAD
+              MaxAge: 3000
+        AccessControl: PublicRead
+    
+    BucketPolicyS3:
+      Type: 'AWS::S3::BucketPolicy'
+      Properties:
+        PolicyDocument:
+          Statement:
+            - Sid: PublicReadForGetBucketObjects
+              Effect: Allow
+              Principal: '*'
+              Action:
+                - 's3:GetObject'
+              Resource: arn:aws:s3:::${self:provider.environment.IMAGES_S3_BUCKET}/*
+        Bucket:
+          Ref: AttachmentsBucket
