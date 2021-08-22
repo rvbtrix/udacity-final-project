@@ -8,8 +8,12 @@ import { IUpdateTodoRequest } from '../requests/UpdateTodoRequest';
  * @returns
  */
 export const getAll = async (): Promise<ITodoItem[]> => {
-
-    return await todoItemDatasource.getAll();
+    try {
+        return await todoItemDatasource.getAll();
+    } catch (error) {
+        console.log('getAll.error', error);
+        throw error;
+    }
 };
 
 /**
@@ -18,8 +22,11 @@ export const getAll = async (): Promise<ITodoItem[]> => {
  * @returns
  */
 export const getTodo = async (todoId: string): Promise<ITodoItem> => {
-
-    return await todoItemDatasource.getByTodoId(todoId);
+    try {
+        return await todoItemDatasource.getByTodoId(todoId);
+    } catch (error) {
+        console.log('getTodo.error', error);
+    }
 };
 
 /**
@@ -28,14 +35,18 @@ export const getTodo = async (todoId: string): Promise<ITodoItem> => {
  * @returns
  */
 export const createTodo = async (requestNewTodo: ICreateTodoRequest, userId: string): Promise<ITodoItem> => {
-    const todo: ITodoItem = {
-        done: false,
-        dueDate: requestNewTodo.dueDate,
-        name: requestNewTodo.name,
-        userId,
-    };
+    try {
+        const todo: ITodoItem = {
+            done: false,
+            dueDate: requestNewTodo.dueDate,
+            name: requestNewTodo.name,
+            userId,
+        };
 
-    return await todoItemDatasource.create(todo);
+        return await todoItemDatasource.create(todo);
+    } catch (error) {
+        console.log('createTodo.error', error);
+    }
 };
 
 /**
@@ -45,14 +56,18 @@ export const createTodo = async (requestNewTodo: ICreateTodoRequest, userId: str
  * @returns
  */
 export const updateTodo = async (todoId: string, todoToUpdate: IUpdateTodoRequest, userId: string): Promise<ITodoItem> => {
-    const todo: ITodoItem = {
-        done: todoToUpdate.done,
-        dueDate: todoToUpdate.dueDate,
-        name: todoToUpdate.name,
-        userId
-    };
+    try {
+        const todo: ITodoItem = {
+            done: todoToUpdate.done,
+            dueDate: todoToUpdate.dueDate,
+            name: todoToUpdate.name,
+            userId
+        };
 
-    return await todoItemDatasource.update(todoId, todo);
+        return await todoItemDatasource.update(todoId, todo);
+    } catch (error) {
+        console.log('updateTodo.error', error);
+    }
 };
 
 /**
@@ -61,8 +76,11 @@ export const updateTodo = async (todoId: string, todoToUpdate: IUpdateTodoReques
  * @returns
  */
 export const deleteTodo = async (id: string): Promise<boolean> => {
-    
-    return await todoItemDatasource.delete(id);
+    try {
+        return await todoItemDatasource.delete(id);
+    } catch (error) {
+        console.log('deleteTodo.error', error);
+    }
 };
 
 /**
@@ -72,6 +90,9 @@ export const deleteTodo = async (id: string): Promise<boolean> => {
  * @returns
  */
 export const updateUrl = async (todoId: string, attachmentUrl: string): Promise<ITodoItem> => {
-   
-    return await todoItemDatasource.update(todoId, { attachmentUrl });
+    try {
+        return await todoItemDatasource.update(todoId, { attachmentUrl });
+    } catch (error) {
+        console.log('updateUrl.error', error);
+    }
 };

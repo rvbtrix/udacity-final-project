@@ -19,26 +19,27 @@ const urlExpiration = process.env.SIGNED_URL_EXPIRATION
  * @returns 
  */
 export const createImage = async (todoId: string) => {
-    console.log('bucketName::', bucketName);
-    console.log('urlExpiration::', urlExpiration);
-
-    const validTodoId = await todoExists(todoId);
-
-    if (!validTodoId) return { error: 'Todo does not exist!!!!!!' };
-
-    const imageId = uuid.v4();
-
-    console.log('imageId:uuid:', imageId);
-
-    const newItem = await setImageUrl(todoId, imageId);
-
-    console.log('newItem::', newItem);
-
-    const url = getUploadUrl(imageId);
-
-    return {
-        newItem: newItem,
-        uploadUrl: url
+    try {
+        const validTodoId = await todoExists(todoId);
+    
+        if (!validTodoId) return { error: 'Todo does not exist!' };
+    
+        const imageId = uuid.v4();
+    
+        console.log('imageId:uuid:', imageId);
+    
+        const newItem = await setImageUrl(todoId, imageId);
+    
+        console.log('newItem::', newItem);
+    
+        const url = getUploadUrl(imageId);
+    
+        return {
+            newItem: newItem,
+            uploadUrl: url
+        }
+    } catch (error) {
+        console.log('createImage.error', error);
     }
 }
 
