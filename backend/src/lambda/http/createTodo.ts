@@ -5,9 +5,6 @@ import { apiGatewayHandleErrors, apiGatewayMiddleware } from '../../external/fra
 import middy from '@middy/core';
 
 export const handler = middy(async ({ requestContext: { authorizer }, body })=> {
-    console.log('body::', body);
-    console.log('authorizer::', authorizer);
-  
     const newTodo: ICreateTodoRequest = body;
 
     const todo = await createTodo(newTodo, authorizer.principalId);

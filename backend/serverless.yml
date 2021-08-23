@@ -15,6 +15,9 @@ package:
   excludeDevDependencies: true
 
 provider:
+  tracing:
+    lambda: true
+    apiGateway: true
   name: aws
   runtime: nodejs14.x
 
@@ -26,7 +29,6 @@ provider:
   iam:
     role:
       statements:
-        # Permite chamada entre lambdas do mesmo projeto (necessário pelo plugin warnup)
         - Effect: 'Allow'
           Action:
               - 'lambda:InvokeFunction'
@@ -78,10 +80,6 @@ provider:
             - s3:GetObject
           Resource: arn:aws:s3:::${self:provider.environment.IMAGES_S3_BUCKET}/*
 
-      # managedPolicies:
-      #   - ${self:custom.config.otherStack.user.busUserEventsStreamConsumerPolicy}
-
-  # vpc: ${self:custom.config.vpc}
   stage: ${opt:stage, 'local'}
   region: ${self:custom.config.region}
 
@@ -97,8 +95,6 @@ functions:
   Auth:
     handler: build/src/lambda/auth/auth0Authorizer.handler
 
-  # TODO: Configure this function -
-  # Provide iamRoleStatements property for performing Actions on DynamoDB
   GetTodos:
     handler: build/src/lambda/http/getTodos.handler
     events:
@@ -108,10 +104,6 @@ functions:
           cors: true
           authorizer: Auth
 
-  # TODO: Configure this function -
-  # Provide iamRoleStatements property. Decide the Actions and AWS Resource.
-  # To refer to an AWS resource defined in the "Resources" section, you can use "Resource: !GetAtt <resource-name>.Arn"
-  # To validate incoming HTTP requests, we have provided the request schemas in function definition below.
   CreateTodo:
     handler: build/src/lambda/http/createTodo.handler
     events:
@@ -120,12 +112,7 @@ functions:
           path: todos
           cors: true
           authorizer: Auth
-          # request:
-          #   schemas:
-          #     application/json: ${file(models/create-todo-model.json)}
 
-  # TODO: Configure this function
-  # Provide property for setting up CORS, Authorizer, iamRoleStatements, and request schemas
   UpdateTodo:
     handler: build/src/lambda/http/updateTodo.handler
     events:
@@ -135,8 +122,6 @@ functions:
           cors: true
           authorizer: Auth
 
-  # TODO: Configure this function
-  # Provide property for setting up CORS, Authorizer, iamRoleStatements
   DeleteTodo:
     handler: build/src/lambda/http/deleteTodo.handler
     events:
@@ -146,8 +131,6 @@ functions:
           cors: true
           authorizer: Auth
 
-  # TODO: Configure this function
-  # Provide property for setting up CORS, Authorizer, iamRoleStatements
   GenerateUploadUrl:
     handler: build/src/lambda/http/generateUploadUrl.handler
     events:
@@ -159,7 +142,6 @@ functions:
 
 
 custom:
-  # Carrega as configurações do stage
   config: ${file(stages.yml):${opt:stage, self:provider.stage}}
   stage: ${self:provider.stage}
   region: ${opt:region, self:provider.region}
@@ -173,7 +155,7 @@ custom:
     perType: false
     perGroupFunction: false
   topicName: imagesTopic-${self:provider.stage}
- 
+
   serverless-offline-dynamodb-streams:
     endpoint: http://0.0.0.0:8000
   prune:
@@ -204,14 +186,16 @@ resources:
           KeySchema:
               - AttributeName: todoId
                 KeyType: HASH
+              - AttributeName: userId
+                KeyType: RANGE
           BillingMode: PAY_PER_REQUEST
           GlobalSecondaryIndexes:
-              - IndexName: userIdIndex
-                KeySchema:
-                  - AttributeName: userId
-                    KeyType: HASH
-                Projection:
-                  ProjectionType: ALL
+            - IndexName: userIdIndex
+              KeySchema:
+                - AttributeName: userId
+                  KeyType: HASH
+              Projection:
+                ProjectionType: ALL # What attributes will be copied to an index
 
     DynamoDBIamPolicy:
         Type: AWS::IAM::Policy
@@ -258,7 +242,7 @@ resources:
                 - HEAD
               MaxAge: 3000
         AccessControl: PublicRead
-    
+
     BucketPolicyS3:
       Type: 'AWS::S3::BucketPolicy'
       Properties:

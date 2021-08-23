@@ -3,8 +3,6 @@ import * as https from 'https';
 
 let httpAgent = new https.Agent({
     rejectUnauthorized: true,
-    // Improve DynamoDB latency by enabling HTTP keepAlive
-    //   https://docs.aws.amazon.com/sdk-for-javascript/v2/developer-guide/node-reusing-connections.html
     keepAlive: true,
 });
 

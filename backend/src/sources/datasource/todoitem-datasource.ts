@@ -1,5 +1,3 @@
-/* eslint-disable max-len */
-
 import { ITodoItem } from '../../entities/todo-item';
 import { TodoItemModel } from '../models/todoitem-model';
 
@@ -8,7 +6,7 @@ interface ITodoItemDatasourse {
     getByTodoId(todoId: string): Promise<ITodoItem>;
     getByUserId(authorizationCode: string): Promise<ITodoItem[]>;
     create(todoItem: ITodoItem): Promise<ITodoItem>;
-    update(todoId: string, todoItem: Partial<ITodoItem>);
+    update(todoId: string, userId: string, todoItem: Partial<ITodoItem>);
     delete(todoId: string);
 }
 
@@ -41,20 +39,9 @@ class TodoItemDatasource implements ITodoItemDatasourse {
 
     public create = async (todoItem: ITodoItem) => TodoItemModel.create(todoItem);
     
-    public update = async (todoId: string, todoItem: Partial<ITodoItem>) => TodoItemModel.update({ todoId }, todoItem);
+    public update = async (todoId: string, userId: string, todoItem: Partial<ITodoItem>) => TodoItemModel.update({ todoId, userId, }, todoItem);
 
     public delete = async (todoId: string) => TodoItemModel.delete(todoId);
-    
-    /**
-     * 
-     * @param response 
-     * @returns 
-     */
-    private handleResponse(response) {
-        const todoItemArray = response as unknown as ITodoItem[];
-
-        return (todoItemArray.length > 0) ? todoItemArray[0] : undefined;
-    }
 }
 
 export const todoItemDatasource: ITodoItemDatasourse = new TodoItemDatasource();

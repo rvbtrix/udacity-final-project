@@ -36,6 +36,8 @@ export const getTodo = async (todoId: string): Promise<ITodoItem> => {
  */
 export const createTodo = async (requestNewTodo: ICreateTodoRequest, userId: string): Promise<ITodoItem> => {
     try {
+        if (!requestNewTodo?.dueDate || !requestNewTodo?.name) throw new Error("Name and duedate is requered.");
+
         const todo: ITodoItem = {
             done: false,
             dueDate: requestNewTodo.dueDate,
@@ -61,10 +63,9 @@ export const updateTodo = async (todoId: string, todoToUpdate: IUpdateTodoReques
             done: todoToUpdate.done,
             dueDate: todoToUpdate.dueDate,
             name: todoToUpdate.name,
-            userId
         };
 
-        return await todoItemDatasource.update(todoId, todo);
+        return await todoItemDatasource.update(todoId, userId, todo);
     } catch (error) {
         console.log('updateTodo.error', error);
     }
@@ -89,9 +90,9 @@ export const deleteTodo = async (id: string): Promise<boolean> => {
  * @param todoToUpdate
  * @returns
  */
-export const updateUrl = async (todoId: string, attachmentUrl: string): Promise<ITodoItem> => {
+export const updateUrl = async (todoId: string, userId: string, attachmentUrl: string): Promise<ITodoItem> => {
     try {
-        return await todoItemDatasource.update(todoId, { attachmentUrl });
+        return await todoItemDatasource.update(todoId, userId, { attachmentUrl });
     } catch (error) {
         console.log('updateUrl.error', error);
     }
