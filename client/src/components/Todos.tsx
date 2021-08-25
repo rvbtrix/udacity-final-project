@@ -46,7 +46,9 @@ export class Todos extends React.PureComponent<TodosProps, TodosState> {
 
   onTodoCreate = async (event: React.ChangeEvent<HTMLButtonElement>) => {
     try {
-      if(!this?.state?.newTodoName) {
+      let regex_emptyOrOnlyWhiteSpace = new RegExp(/^\s*$/);
+
+      if(!this?.state?.newTodoName || regex_emptyOrOnlyWhiteSpace.test(this.state.newTodoName)) {
         alert("Field Name is required.")
         return
       }

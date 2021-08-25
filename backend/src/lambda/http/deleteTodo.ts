@@ -4,10 +4,12 @@ import { deleteTodo } from '../../helpers/todos'
 import middy from '@middy/core';
 
 
-export const handler = middy(async ({ pathParameters })=> {
+export const handler = middy(async ({ requestContext: { authorizer }, pathParameters })=> {
     const { todoId } = pathParameters;
 
-    await deleteTodo(todoId);
+    console.log('todoId', todoId );
+    console.log('authorizer', authorizer.principalId );
+    await deleteTodo(todoId, authorizer.principalId);
     
     return { deleted: true };
 })

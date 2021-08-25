@@ -7,15 +7,16 @@ const tableName = process.env.TODOITEM_DB_TABLE || 'env TODOITEM_DB_TABLE not fo
 
 export const TodoItemModel = DynamoDatabase.model<ITodoItem & Document>(tableName, new DynamoDatabase.Schema(
     {
-        todoId: {
-            type: String,
-            hashKey: true,
-            default: () => uuid(),
-        },
         userId: {
             type: String,
+            hashKey: true,
+        },
+        todoId: {
+            type: String,
+            default: () => uuid(),
+            rangeKey: true,
             index: {
-                name: 'userIdIndex',
+                name: 'todoIdIndex',
                 global: true,
                 project: true,
             },

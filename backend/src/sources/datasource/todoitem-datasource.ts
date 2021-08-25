@@ -1,3 +1,4 @@
+import { Document } from 'dynamoose/dist/Document';
 import { ITodoItem } from '../../entities/todo-item';
 import { TodoItemModel } from '../models/todoitem-model';
 
@@ -7,7 +8,7 @@ interface ITodoItemDatasourse {
     getByUserId(authorizationCode: string): Promise<ITodoItem[]>;
     create(todoItem: ITodoItem): Promise<ITodoItem>;
     update(todoId: string, userId: string, todoItem: Partial<ITodoItem>);
-    delete(todoId: string);
+    delete(todoId: string, userId: string);
 }
 
 class TodoItemDatasource implements ITodoItemDatasourse {
@@ -38,10 +39,10 @@ class TodoItemDatasource implements ITodoItemDatasourse {
     };
 
     public create = async (todoItem: ITodoItem) => TodoItemModel.create(todoItem);
-    
+
     public update = async (todoId: string, userId: string, todoItem: Partial<ITodoItem>) => TodoItemModel.update({ todoId, userId, }, todoItem);
 
-    public delete = async (todoId: string) => TodoItemModel.delete(todoId);
+    public delete = async (todoId: string, userId: string) => TodoItemModel.delete({ todoId, userId, });
 }
 
 export const todoItemDatasource: ITodoItemDatasourse = new TodoItemDatasource();

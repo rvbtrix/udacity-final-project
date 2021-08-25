@@ -36,7 +36,10 @@ export const getTodo = async (todoId: string): Promise<ITodoItem> => {
  */
 export const createTodo = async (requestNewTodo: ICreateTodoRequest, userId: string): Promise<ITodoItem> => {
     try {
-        if (!requestNewTodo?.dueDate || !requestNewTodo?.name) throw new Error("Name and duedate is requered.");
+        const reWhiteSpace = new RegExp(/^(?!\s+$)[A-Za-zăâîșțĂÂÎȘȚ\s-]+$/);
+
+        if (!requestNewTodo?.dueDate || !requestNewTodo?.name || 
+            !reWhiteSpace.test(requestNewTodo.name)) throw new Error("Name and duedate is requered.");
 
         const todo: ITodoItem = {
             done: false,
@@ -76,9 +79,9 @@ export const updateTodo = async (todoId: string, todoToUpdate: IUpdateTodoReques
  * @param id
  * @returns
  */
-export const deleteTodo = async (id: string): Promise<boolean> => {
+export const deleteTodo = async (todoId: string, userId: string): Promise<boolean> => {
     try {
-        return await todoItemDatasource.delete(id);
+        return await todoItemDatasource.delete(todoId, userId);
     } catch (error) {
         console.log('deleteTodo.error', error);
     }
